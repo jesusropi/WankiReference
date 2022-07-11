@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 from requests import get
 from re import search
 from datetime import datetime
@@ -43,8 +44,10 @@ def get_pronountiation(word, name):
 
 def get_sound_name(html):
     """regex: en/numero4-6 digitos.mp3"""
-    groups = search(r"en(\d+)\.mp3", html).groups()
-    return 'en' + groups[0]
+    s = search(r"en(\d+)\.mp3", html)
+    if s:
+        groups = s.groups()
+    return 'en' + groups[0] if s else ''
 
 
 def get_html(word):
@@ -59,7 +62,7 @@ def get_translation(html):
     """Devuelve la traduccion solicitada"""
     soup = BeautifulSoup(html, 'html.parser')
     trans = soup.find_all("td", "ToWrd")
-    return [t.next for t in trans[1:6]]
+    return [t.next for t in trans[1:6] if not isinstance(t.next, Tag)]
 
 
 def create_card(word, translation):
@@ -105,7 +108,8 @@ def main():
         trans = get_translation(html)
         cards.append(create_card(w, trans))
         sound_name = get_sound_name(html)
-        get_pronountiation(w, sound_name + '.mp3')
+        if sound_name:
+            get_pronountiation(w, sound_name + '.mp3')
         sleep(2)
     create_massive_import(cards)
 
